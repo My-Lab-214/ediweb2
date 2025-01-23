@@ -8,20 +8,29 @@ function enableEditMode() {
     alert('Edit mode enabled. You can now edit the page.');
 }
 
-// Save content to GitHub
-async function saveContent() {
-    const content = document.documentElement.outerHTML;
+// Function to extract only the text content from the page
+function getTextContent() {
+    const elements = document.body.querySelectorAll('*');
+    let pageText = '';
 
-    // Convert content to Base64 (ensuring proper encoding)
+    elements.forEach(element => {
+        if (element.children.length === 0 && element.textContent.trim() !== '') {
+            pageText += element.textContent.trim() + '\n';
+        }
+    });
+
+    return pageText;
+}
+
+// Save only text content to GitHub
+async function saveContent() {
+    const content = getTextContent();
     const encodedContent = btoa(unescape(encodeURIComponent(content)));
 
     try {
-        // Step 1: Get the file SHA to update the existing content
+        // Step 1: Get the file SHA
         const fileResponse = await fetch(GITHUB_API_URL, {
-            headers: { 
-                Authorization: `token ${GITHUB_TOKEN}`,
-                Accept: 'application/vnd.github.v3+json'
-            }
+            headers: { Authorization: `token ${GITHUB_TOKEN}` }
         });
 
         if (!fileResponse.ok) {
@@ -29,18 +38,17 @@ async function saveContent() {
         }
 
         const fileData = await fileResponse.json();
-        const fileSHA = fileData.sha;  // Get the SHA to update the file
+        const fileSHA = fileData.sha;
 
-        // Step 2: Update the content in the repository
+        // Step 2: Update the content with only text
         const updateResponse = await fetch(GITHUB_API_URL, {
             method: 'PUT',
             headers: {
                 Authorization: `token ${GITHUB_TOKEN}`,
-                'Content-Type': 'application/json',
-                Accept: 'application/vnd.github.v3+json'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                message: 'Updated index.html via web page',
+                message: 'Updated text content only',
                 content: encodedContent,
                 sha: fileSHA  // Required to overwrite the file
             })
@@ -50,26 +58,22 @@ async function saveContent() {
             throw new Error('Failed to update content.');
         }
 
-        alert('Content saved successfully!');
+        alert('Text content saved successfully!');
     } catch (error) {
         console.error('Error saving content:', error);
-        alert('Failed to save content. Check the console for details.');
+        alert('Failed to save content.');
     }
 }
 
 // Reset content to original version from GitHub
-async function resetContent() {
-    try {
-        const response = await fetch(GITHUB_RAW_URL);
-        if (!response.ok) throw new Error('Failed to fetch original content.');
-
-        const data = await response.text();
-        document.open();
-        document.write(data);
-        document.close();
-        alert('Page reset to original content.');
-    } catch (error) {
-        console.error('Error fetching content:', error);
-        alert('Failed to reset content.');
-    }
+function resetContent() {
+    fetch(GITHUB_RAW_URL)
+        .then(response => response.text())
+        .then(data => {
+            document.open();
+            document.write(data);
+            document.close();
+            alert('Page reset to original content.');
+        })
+        .catch(error => console.error('Error fetching content:', error));
 }
