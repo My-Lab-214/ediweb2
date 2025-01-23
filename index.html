@@ -22,22 +22,28 @@
         }
 
         async function saveContent() {
-            const updatedText = document.getElementById('editable').innerText;
+    const content = document.documentElement.innerHTML;  // Get the whole HTML content
 
-            try {
-                const response = await fetch('http://localhost:3000/update', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ newText: updatedText })
-                });
+    try {
+        const response = await fetch('http://localhost:3000/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ content })
+        });
 
-                const result = await response.json();
-                alert(result.message);
-            } catch (error) {
-                console.error('Error saving content:', error);
-                alert('Failed to save content.');
-            }
+        const result = await response.json();
+        if (response.ok) {
+            alert('Content saved successfully!');
+        } else {
+            alert('Error: ' + result.message);
         }
+    } catch (error) {
+        console.error('Error saving content:', error);
+        alert('Failed to save content.');
+    }
+}
 
         function resetContent() {
             loadContent();
