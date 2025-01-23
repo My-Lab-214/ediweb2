@@ -3,42 +3,37 @@ const editButton = document.getElementById('editButton');
 const saveButton = document.getElementById('saveButton');
 const resetButton = document.getElementById('resetButton');
 
-// GitHub Configuration
-const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/My-Lab-214/ediweb2/main/index.html';
+const GITHUB_TOKEN = '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';  
 const GITHUB_API_URL = 'https://api.github.com/repos/My-Lab-214/ediweb2/contents/index.html';
-const GITHUB_TOKEN = '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';  // Store securely in the backend!
+const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/My-Lab-214/ediweb2/main/index.html';
 
-// Load original content from GitHub on page load
-async function loadOriginalContent() {
-    try {
-        const response = await fetch(GITHUB_RAW_URL);
-        if (!response.ok) throw new Error('Failed to fetch content.');
-        const text = await response.text();
-        contentDiv.innerHTML = text;
-    } catch (error) {
-        console.error('Error loading content:', error);
-    }
+// Enable Design Mode
+function enableEditMode() {
+    document.designMode = 'on';
+    alert('Edit mode enabled. You can now edit the page.');
 }
 
-// Edit button to enable content editing
-editButton.addEventListener('click', () => {
-    contentDiv.contentEditable = true;
-    editButton.style.display = 'none';
-    saveButton.style.display = 'inline-block';
-});
+// Save content to GitHub
+async function saveContent() {
+    const content = document.documentElement.outerHTML;
 
-// Save button to push content to GitHub
-saveButton.addEventListener('click', async () => {
-    const newContent = contentDiv.innerHTML;
-    const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
+    // Convert content to Base64
+    const encodedContent = btoa(unescape(encodeURIComponent(content)));
 
     try {
-        // Get the current file SHA to update it
-        const getResponse = await fetch(GITHUB_API_URL, {
+        // Step 1: Get the file SHA
+        const fileResponse = await fetch(GITHUB_API_URL, {
             headers: { Authorization: `token ${GITHUB_TOKEN}` }
         });
-        const fileData = await getResponse.json();
 
+        if (!fileResponse.ok) {
+            throw new Error('Failed to fetch file data.');
+        }
+
+        const fileData = await fileResponse.json();
+        const fileSHA = fileData.sha;
+
+        // Step 2: Update the content
         const updateResponse = await fetch(GITHUB_API_URL, {
             method: 'PUT',
             headers: {
@@ -46,29 +41,32 @@ saveButton.addEventListener('click', async () => {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                message: 'Updated content via web app',
+                message: 'Updated index.html via web page',
                 content: encodedContent,
-                sha: fileData.sha
+                sha: fileSHA  // Required to overwrite
             })
         });
 
-        if (!updateResponse.ok) throw new Error('Failed to update content.');
-        alert('Changes saved successfully!');
-        saveButton.style.display = 'none';
-        editButton.style.display = 'inline-block';
-        contentDiv.contentEditable = false;
+        if (!updateResponse.ok) {
+            throw new Error('Failed to update content.');
+        }
+
+        alert('Content saved successfully!');
     } catch (error) {
         console.error('Error saving content:', error);
         alert('Failed to save content.');
     }
-});
+}
 
-// Reset button to fetch the original version
-resetButton.addEventListener('click', async () => {
-    localStorage.removeItem('content');
-    await loadOriginalContent();
-    alert('Page has been reset to original content.');
-});
-
-// Load content on page load
-window.onload = loadOriginalContent;
+// Reset content to original version from GitHub
+function resetContent() {
+    fetch(GITHUB_RAW_URL)
+        .then(response => response.text())
+        .then(data => {
+            document.open();
+            document.write(data);
+            document.close();
+            alert('Page reset to original content.');
+        })
+        .catch(error => console.error('Error fetching content:', error));
+}
