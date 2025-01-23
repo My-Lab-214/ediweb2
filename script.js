@@ -12,13 +12,16 @@ function enableEditMode() {
 async function saveContent() {
     const content = document.documentElement.outerHTML;
 
-    // Convert content to Base64
+    // Convert content to Base64 (ensuring proper encoding)
     const encodedContent = btoa(unescape(encodeURIComponent(content)));
 
     try {
-        // Step 1: Get the file SHA
+        // Step 1: Get the file SHA to update the existing content
         const fileResponse = await fetch(GITHUB_API_URL, {
-            headers: { Authorization: `token ${GITHUB_TOKEN}` }
+            headers: { 
+                Authorization: `token ${GITHUB_TOKEN}`,
+                Accept: 'application/vnd.github.v3+json'
+            }
         });
 
         if (!fileResponse.ok) {
@@ -26,19 +29,20 @@ async function saveContent() {
         }
 
         const fileData = await fileResponse.json();
-        const fileSHA = fileData.sha;
+        const fileSHA = fileData.sha;  // Get the SHA to update the file
 
-        // Step 2: Update the content
+        // Step 2: Update the content in the repository
         const updateResponse = await fetch(GITHUB_API_URL, {
             method: 'PUT',
             headers: {
                 Authorization: `token ${GITHUB_TOKEN}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                Accept: 'application/vnd.github.v3+json'
             },
             body: JSON.stringify({
                 message: 'Updated index.html via web page',
                 content: encodedContent,
-                sha: fileSHA  // Required to overwrite
+                sha: fileSHA  // Required to overwrite the file
             })
         });
 
@@ -49,19 +53,23 @@ async function saveContent() {
         alert('Content saved successfully!');
     } catch (error) {
         console.error('Error saving content:', error);
-        alert('Failed to save content.');
+        alert('Failed to save content. Check the console for details.');
     }
 }
 
 // Reset content to original version from GitHub
-function resetContent() {
-    fetch(GITHUB_RAW_URL)
-        .then(response => response.text())
-        .then(data => {
-            document.open();
-            document.write(data);
-            document.close();
-            alert('Page reset to original content.');
-        })
-        .catch(error => console.error('Error fetching content:', error));
+async function resetContent() {
+    try {
+        const response = await fetch(GITHUB_RAW_URL);
+        if (!response.ok) throw new Error('Failed to fetch original content.');
+
+        const data = await response.text();
+        document.open();
+        document.write(data);
+        document.close();
+        alert('Page reset to original content.');
+    } catch (error) {
+        console.error('Error fetching content:', error);
+        alert('Failed to reset content.');
+    }
 }
