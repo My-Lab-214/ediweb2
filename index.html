@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Page</title>
+</head>
+<body>
+    <h1 contenteditable="true" id="editable">Loading content...</h1>
+    <button onclick="saveContent()">Save</button>
+    <button onclick="resetContent()">Reset</button>
+
+    <script>
+        async function loadContent() {
+            try {
+                const response = await fetch('http://localhost:3000/content');
+                const data = await response.json();
+                document.getElementById('editable').innerText = data.content;
+            } catch (error) {
+                console.error('Error loading content:', error);
+            }
+        }
+
+        async function saveContent() {
+            const updatedText = document.getElementById('editable').innerText;
+
+            try {
+                const response = await fetch('http://localhost:3000/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ newText: updatedText })
+                });
+
+                const result = await response.json();
+                alert(result.message);
+            } catch (error) {
+                console.error('Error saving content:', error);
+                alert('Failed to save content.');
+            }
+        }
+
+        function resetContent() {
+            loadContent();
+            alert('Content reset to original.');
+        }
+
+        window.onload = loadContent;
+    </script>
+</body>
+</html>
