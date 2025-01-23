@@ -4,8 +4,8 @@ const saveButton = document.getElementById('saveButton');
 const resetButton = document.getElementById('resetButton');
 
 // GitHub Configuration
-const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/My-Lab-214/ediweb2/main/content.html';
-const GITHUB_API_URL = 'https://api.github.com/repos/My-Lab-214/ediweb2/contents/content.html';
+const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/My-Lab-214/ediweb2/main/index.html';
+const GITHUB_API_URL = 'https://api.github.com/repos/My-Lab-214/ediweb2/contents/index.html';
 const GITHUB_TOKEN = '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';  // Store securely in the backend!
 
 // Load original content from GitHub on page load
